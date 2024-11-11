@@ -13,17 +13,17 @@
 ; containing v and p is the position of v in that sublist
 
 (define test
-'(lambda
+'((lambda
      (x y)
 ;---------------(1)
   (
    (lambda(a)
 ;--------------(2)
-     (x (a y))
+     (x (a y w))
    ) ;(: 1 0) (: 0 0) (: 1 1)
 ;--------------(2)
-   x)
-  )); (: 0 0)
+   x)) ; (: 0 0)
+  x)) 
 ;--------------(1)
 
 ; for this specific example we have a 3 element list (lambda, (x y), and ((lambda (a) (x (a y))) x)
@@ -35,4 +35,116 @@
 
 ; Then the process will start with a way to keep track of what variables are bounded in the lambda expressions
 
+
+; lets create a bnf definition that we have already used in the past
+
+; <expr> =:: (<lambda> <var*> <expr>)
+;        =:: (if <expr> <expr> <expr>)
+;        =:: <var>
+;        =:: <expr*>
+
+(define lexical-address
+  '(lambda (a b c) (if (eqv? b c) ((lambda (c) (cons a c)) a) b)))
+
+(define answ
+  '(lambda (a b c) (if ((eqv? free) (b : 0 1) (c : 0 2)) ((lambda (c) ((cons free) (a : 1 0) (c : 0 0))) (a : 0 0)) (b : 0 1)))
+)
+
+
+; lets first start with functions that will determine if a variable occurs free
+
+;A variable x occurs free in E if and only if there is some use of x in E that is not bound by any
+;declaration of x in E.
+
+;A variable x occurs bound in an expression E if and only if there is some use of x in E that is
+;bound by a declaration of x in E.
+
+(define make-lamb
+  (lambda (formal body)
+    (list 'lambda formal body)
+    )
+  )
+
+(define make-if
+  (lambda (formal true false)
+    (list 'if formal true false)
+    )
+  )
+
+(define make-lexical
+  (lambda (var depth pos)
+    (if (eq? pos 'free)
+        (list var pos)
+        (list var depth pos)
+        )
+    )
+  )
+
+(define prefix
+  (lambda (expr)
+    (car expr)
+    )
+  )
+
+(define param
+  (lambda (expr)
+    (cadr expr)
+    )
+  )
+
+(define body
+  (lambda (expr)
+    (caddr expr)
+    )
+  )
+
+(define condition
+  (lambda (expr)
+    (car expr)
+    )
+  )
+
+(define true
+  (lambda (expr)
+    (cadr expr)
+    )
+  )
+
+(define false
+  (lambda(expr)
+    (caddr expr)
+    )
+  )
+
+(define unreserved-symbol?
+  (lambda (expr)
+    (and (not (eq? (first expr) 'lambda)) (not (eq? (first expr) 'if)) (symbol? expr))
+    )
+  )
+
+(define occurs-free?
+  (lambda (exp var)
+    (cond ((symbol? exp) (eqv? exp var))
+          ((eqv? (car exp) 'lambda) (and (not (eqv? (caadr exp) var))
+                                         (occurs-free? (caddr exp) var)))
+          (else (or (occurs-free? (car exp) var)
+                    (occurs-free? (cadr exp) var)))
+          )
+    )
+  )
+
+(define test1
+  '(lambda (a) (x (a y w))))
+
+(define occurs-bound?
+  (lambda (exp var)
+    (cond ((symbol? exp) #f)
+          ((eqv? (car exp) 'lambda) (or (occurs-bound? (caddr exp) var)
+                                        (and (eqv? (caadr exp) var)
+                                             (occurs-free? (caddr exp) var))))
+          (else (or (occurs-bound? (car exp) var)
+                    (occurs-bound? (cadr exp) var)))
+          )
+    )
+  )
 
