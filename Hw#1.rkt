@@ -1,0 +1,76 @@
+; Hw#1
+; 1. a)What is the meaning of (lambda()1), How do you call this
+;    b)Is "(lambda(x y z) 17)" a legal definition? If so how is it called? what result does it give?
+;    c)Assuming no definitions have been entered. what do you make of "((lambda(x)(+ x y)) 2)"?
+;    d)Suppose > (define x 2)
+;              > ((lambda(x)(+ x 1)) 3)
+;      What is the value of x when the evaluation of the function call is complete?
+;      Repeat for:
+;              > ((lambda(x)(+ x 1)) x)
+;              > ((lambda(x)(+ x 1)) 2 3)
+;              > ((lambda(x)(+ x 1)) #I)
+;              > ((lambda(x)(+ x ((lambda(x) (+ x 1)) 2))) 4)
+;              > ((lambda(x)
+;                  (if ( > x 2)
+;                       (lambda(x)(/ x 2))
+;                       (lambda(x)(* x 2)))) 5)
+;              > (+ (define X 2) 3)
+;              > (lambda(x) 2)
+;              > (lambda(x) (define y x))
+; 2. Can we use the if form to define logical and? logical or? logical negation? If so, write purely functional scheme programs for all three.
+; 3. Write a purely functional scheme program to compute the sum of the squares of the two largest of three numbers.
+; 4. write a purely functional scheme program to input 5 integers and output a list containing only these inputs in sorted order. YOur program should not use looping or recursion; scheme does not have a sort primitive.
+
+; (lambda() 1) is the beginning of a function with one of the parameters being 1
+((lambda(x) (+ x 1)) 1)
+
+; This function takes three parameters
+((lambda(x y z) (+ y)) 17 1 1)
+
+; This function has many error like y not being identified before the procedure and that only one input is given.
+((lambda(x y)(+ x y)) 2 1) ; altered function
+
+; The first line defines a function "x" that returns 2, the second is a regular function
+(define x 2)
+((lambda(x)(+ x 1))3)
+x
+
+((lambda(x)(+ x 1)) x) ; 2+1 = 3
+;((lambda(x)(+ x 1)) 2 3); Too many inputs (expected one)
+;((lambda(x)(+ x 1)) #T); Invalid synthax
+((lambda(x)(+ x ((lambda(x) (+ x 1)) 2))) 4); Inner function is equal to 3 and outer function takes the three and adds 4
+((lambda(x)
+   (if ( > x 2)
+   (lambda(x)(/ x 2))
+   (lambda(x)(* x 2)))) 5) ; if x (5) is greater than 2 then return first lambda else second
+;(+ (define X 2) 3) ; Invalid synthax "define" cannot be in procedure
+(lambda(x) 2) ; returns procedure type as no expression is given
+;(lambda(x) (define y x)) ; invalid synt
+
+; do logical operators later
+;pre: Given that x and y are booleans
+(define my_and
+  (lambda (x y)
+    (if x y #f)))
+
+
+(define max
+(define greater_square
+  (lambda (a b c)
+  (let* ((max1 (max a b c))
+         (max2 (if (= max1 a)
+                   (max b c)
+                   (if (= max1 b)
+                       (max a c)
+                       (max a b)))))
+    (+ (* max1 max1) (* max2 max2)))))
+
+(greater_square 1 2 3)
+
+(define return_listed
+  (lambda (a b c d e)
+    
+    (list a b d c e)
+     ))
+
+(return_listed 1 2 3 4 5)

@@ -1,0 +1,13 @@
+; class 11/5 notes
+
+#lang eopl
+; this is a definition of a regular binary tree
+
+(define-datatype bintree bintree?
+  (leaf-node
+   (datum number?))
+  (interior-node
+   (key symbol?)
+   (left bintree?)
+   (right bintree?)))
+

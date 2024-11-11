@@ -1,0 +1,44 @@
+; class 10/31 notes
+
+; base N bignum representation of numbers
+
+; This is basically given an integer what is the base notation given base N. Like binary but its not just base 2. 
+
+; Example: N=15
+; (16_10) = 1*15^0 + 1*15^1 = (1 1)
+
+; (242_10) = 2*15^0 + 1*15^1 + 1*15^2 = (2 1 1)
+
+; (0) = ()
+
+; then note that the output list can have elements that are as high as mod N or as low as 0.
+
+; what is base 10 for (14 1), 14 + 15 = 29
+; How can successors be computed using these big nums?
+; What is the successor its 243 or in big nums:
+
+; (2 1 1) -> (3 1 1), Is this a sufficiently general example?
+
+; NO, what if the element is the max value of N - 1, like (14 1)?
+
+; well it carries over to the second element -> (0 2)
+
+; With this in mind what will the code look like?
+
+; say you are given the values 16 and base 3, what is the first step?
+; if 16/3^0 is > N-1, then check next for 16/N^1 where if that is still greater than keep going until it isnt
+; where then you would return the remainder to one less than the power divided by
+; then this should be a recursive call where first occurance will be like (if bignum/N^0 > N-1) then (bigint bignum (power N 2))
+; ofcourse the output is a list so there needs to be cons some where like (cons n^k n^k+1)
+
+; 16 base 3 = (1 2 1)= 1 + 6 + 9
+; well lets think about this again 16/3 = R1, 15/9 = R6, 9/27 = R9
+; then (cons ((remainder (bignum N) (bigint (- bignum remainder) (* N 
+
+
+(define (succBase n)
+  (let((succ (lambda (m)
+                   (cond ((iszero? m) '(1))
+                         ((= (- n 1) (car m)) (cons 0 (succ (cdr m))))
+                         (else (cons (+ (car m) 1) (cdr m)))))))
+    succ))

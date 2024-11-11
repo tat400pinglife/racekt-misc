@@ -1,0 +1,83 @@
+#lang eopl
+;; Define a data type for logical expressions
+
+;; Constructor for 'and'
+(define (make-and left right)
+  (list 'and left right))
+
+;; Constructor for 'or'
+(define (make-or left right)
+  (list 'or left right))
+
+;; Constructor for 'not'
+(define (make-not expr)
+  (list 'not expr))
+
+;; Constructor for atomic variables (e.g., A, B, C)
+(define (make-var symbol)
+  symbol)
+
+;; Classifiers (Predicates)
+
+;; Check if the expression is 'and'
+(define (and? expr)
+  (and (pair? expr) (eq? (car expr) 'and)))
+
+;; Check if the expression is 'or'
+(define (or? expr)
+  (and (pair? expr) (eq? (car expr) 'or)))
+
+;; Check if the expression is 'not'
+(define (not? expr)
+  (and (pair? expr) (eq? (car expr) 'not)))
+
+;; Check if the expression is a variable
+(define (var? expr)
+  (symbol? expr))
+
+;; Selectors
+
+;; Get the left operand of an 'and' or 'or' expression
+(define (left expr)
+  (cadr expr))
+
+;; Get the right operand of an 'and' or 'or' expression
+(define (right expr)
+  (caddr expr))
+
+;; Get the operand of a 'not' expression
+(define (not-expr expr)
+  (cadr expr))
+
+;; Transformation function: Convert 'or' into 'and' and 'not' using De Morgan's law
+(define (transform-to-and-not expr)
+  (cond
+    ;; If it's an 'or' expression, apply De Morgan's law
+    ((or? expr)
+     (make-not (make-and (make-not (transform-to-and-not (left expr)))
+                         (make-not (transform-to-and-not (right expr))))))
+    
+    ;; If it's an 'and' expression, recursively transform its components
+    ((and? expr)
+     (make-and (transform-to-and-not (left expr))
+               (transform-to-and-not (right expr))))
+    
+    ;; If it's a 'not' expression, recursively transform its component
+    ((not? expr)
+     (make-not (transform-to-and-not (not-expr expr))))
+    
+    ;; If it's a variable, return it as is
+    ((var? expr) expr)))
+
+;; Example usage
+
+(define example-expr 
+  (make-and (make-or (make-var 'A) (make-var 'B)) 
+            (make-or (make-var 'C) (make-var 'D))))
+
+;; Transform the example expression
+(define transformed-expr (transform-to-and-not example-expr))
+
+;; Display the result
+(display transformed-expr) ; Output: (and (not (and (not A) (not B))) (not (and (not C) (not D))))
+(newline)

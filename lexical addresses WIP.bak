@@ -1,0 +1,36 @@
+; lex add
+
+; quick thing on lexical addresses
+
+; var = (var : depth posiiton)
+
+; where depth is the amount of lambda functions that contains it excluding the one that references it
+; position refers to the order the variable appears in the depth of its environment
+
+(lambda (x)
+  (lambda (y)
+    (
+        (lambda (x)
+          ((x: 0 0) (y: 1 0)) ; here x is referenced in its environment while y is referenced one environment higher
+         )
+        
+     (x: 1 0)
+    )
+   )
+  )
+
+; each variabel has been replaced with (v: d p) where d is the depth in the environment
+; containing v and p is the position of v in that sublist
+
+
+(lambda (x y)
+;---------------(1)
+  (
+   (lambda(a)
+;--------------(2)
+     (x (a y))
+   ) ;(: 1 0) (: 0 0) (: 1 1)
+;--------------(2)
+   x)
+  ); (: 0 0)
+;--------------(1)
