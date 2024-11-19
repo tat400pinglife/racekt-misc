@@ -1,5 +1,6 @@
 ;; Define constructors and selectors for identifiers and addresses
 
+#lang eopl
 ;; Constructor for an identifier with a lexical address
 (define (make-identifier name depth position)
   (if (eq? position 'free)

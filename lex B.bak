@@ -1,7 +1,5 @@
 ;; Define constructors and selectors for identifiers and addresses
 
-#lang eopl
-
 ;; Constructor for an identifier with a lexical address
 (define (make-identifier name depth position)
   (if (eq? position 'free)
@@ -64,7 +62,7 @@
 ;; Testing the lexical address transformation
 (define test-expr
   '(lambda (x y)
-     ((lambda (x)
+     ((lambda (a)
         (x (a y w)))  ;; Inner function body
       x)))            ;; Application of inner lambda to `x`
 
