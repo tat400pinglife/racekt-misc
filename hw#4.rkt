@@ -39,10 +39,76 @@
 ; So the idea for the code is to detect what kind of expression is inputted and transform the expression by demorgan
 ; and replace the expression to one that is accepted and then recusively exmaine the vars of the expression and change them if needed.
 
+;; Define constructors, classifiers, selectors for logical expressions as lists
+
+(define (make-and left right)
+  (list 'and left right))
+
+(define (make-or left right)
+  (list 'or left right))
+
+(define (make-not expr)
+  (list 'not expr))
+
+(define (make-implies left right)
+  (list 'implies left right))
+
+(define (make-var symbol)
+  symbol)
+
+;; Classifiers
+
+(define (and? expr)
+  (and (pair? expr) (eq? (car expr) 'and)))
+
+(define (or? expr)
+  (and (pair? expr) (eq? (car expr) 'or)))
+
+(define (not? expr)
+  (and (pair? expr) (eq? (car expr) 'not)))
+
+(define (implies? expr)
+  (and (pair? expr) (eq? (car expr) 'implies)))
+
+(define (var? expr)
+  (symbol? expr))
+
+;; Selectors
+
+(define (left expr)
+  (cadr expr))
+
+(define (right expr)
+  (caddr expr))
+
+(define (not-expr expr)
+  (cadr expr))
 
 
+; A quick rundown on how demorgans transforms expressions:
+; (A or B) == (not (not A and not B))
+; (A implies B) == (not A or B) == (not (A and not B))
+; All other cases have logical operations that don't conflict with the end goal
+
+(define (transform expr)
+  (cond
+    ((or? expr)
+     (make-not (make-and (make-not (transform (left expr)))
+                         (make-not (transform (right expr))))))
+    ((implies? expr)
+     (transform (make-not (make-and (transform (left expr))
+                          (make-not (transform (right expr)))))))
+    ((and? expr)
+     (make-and (transform (left expr))
+               (transform (right expr))))
+    ((not? expr)
+     (make-not (transform (not-expr expr))))
+
+    ((var? expr) expr)))
 
 
+(define test
+  '(implies A (and (or B C) (not D))))
 
 
 
