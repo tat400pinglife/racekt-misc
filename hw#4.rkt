@@ -16,6 +16,8 @@
 
 ; 1.31: 
 
+
+; ALL OF THIS IS IN SEPARATE FILE "lexical addresses WIP"
 #lang eopl
 
 ; first lets define what our program will do:

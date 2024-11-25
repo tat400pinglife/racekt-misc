@@ -73,3 +73,6 @@
 
 (display transformed-expr) ; Show the transformed expression with lexical addresses
 (newline)
+
+(define test1
+  '(lambda (a) (x a y w)))
