@@ -59,6 +59,11 @@
 ;; (list->string (maximal-prefix s)) is the longest initial substring s[0..j] such that
 ;; s[j] is neither  a left parentheses, a right parentheses, nor a comma
 
+; the base case of an empty string should be included in the descript
+
+; the original descript also doesn't specify on the quantity of the string
+; Like "such that for every index k, 0 <= k <= j, s[k] != {'(', ')', ','}
+
 (define maximal-prefix
   (lambda (s)
     (let ((max-index (- (string-length s) 1)))

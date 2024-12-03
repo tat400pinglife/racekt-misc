@@ -2,11 +2,6 @@
 
 ; Given a 2 sequences output the longest common sub-sequence ( number and string ).
 
-
-; note that we need two functions, first is the classical recursive exponential time
-; The second is m*n time where it can use vectors and lists.
-
-; note that vectors have limitations, but it has a faster look-up
 (define s1
   "abcdefghi")
 
