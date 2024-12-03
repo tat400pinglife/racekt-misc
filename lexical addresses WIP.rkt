@@ -47,7 +47,7 @@
   '(lambda (a b c) (if (eqv? b c) ((lambda (c) (cons a c)) a) b)))
 
 (define answ
-  '(lambda (a b c) (if ((eqv? free) (b : 0 1) (c : 0 2)) ((lambda (c) ((cons free) (a : 1 0) (c : 0 0))) (a : 0 0)) (b : 0 1)))
+  '(lambda (a b c) (if (eqv? (b : 0 1) (c : 0 2)) ((lambda (c) (cons (a : 1 0) (c : 0 0))) (a : 0 0)) (b : 0 1)))
 )
 
 
@@ -100,19 +100,19 @@
 
 (define condition
   (lambda (expr)
-    (car expr)
+    (cadr expr)
     )
   )
 
 (define true
   (lambda (expr)
-    (cadr expr)
+    (caddr expr)
     )
   )
 
 (define false
   (lambda(expr)
-    (caddr expr)
+    (cadddr expr)
     )
   )
 
@@ -122,29 +122,94 @@
     )
   )
 
-(define occurs-free?
-  (lambda (exp var)
-    (cond ((symbol? exp) (eqv? exp var))
-          ((eqv? (car exp) 'lambda) (and (not (eqv? (caadr exp) var))
-                                         (occurs-free? (caddr exp) var)))
-          (else (or (occurs-free? (car exp) var)
-                    (occurs-free? (cadr exp) var)))
-          )
-    )
-  )
 
 (define test1
-  '(lambda (a) (x (a y w))))
+  '(lambda (a) (x a y w)))
 
-(define occurs-bound?
-  (lambda (exp var)
-    (cond ((symbol? exp) #f)
-          ((eqv? (car exp) 'lambda) (or (occurs-bound? (caddr exp) var)
-                                        (and (eqv? (caadr exp) var)
-                                             (occurs-free? (caddr exp) var))))
-          (else (or (occurs-bound? (car exp) var)
-                    (occurs-bound? (cadr exp) var)))
-          )
-    )
-  )
+;; Helper to determine if a symbol is a variable (not a keyword or operation)
+(define (is-variable? sym)
+  (and (symbol? sym)  ;; Must be a symbol
+       (not (member sym '(lambda if + - * / < > =)))))  ;; Exclude reserved keywords/operations
 
+;; Collects bound variables from an expression
+(define (get-bound-vars expr)
+  (let loop ((expr expr) (bound-vars '()))
+    (cond
+      ;; Case: atomic expression (variable)
+      ((symbol? expr) bound-vars)
+      
+      ;; Case: lambda expression (<lambda> <var*> <expr>)
+      ((and (pair? expr) (eq? (prefix expr) 'lambda))
+       (let* ((params (filter is-variable? (param expr)))  ;; Only include valid variables
+              (body (body expr))
+              (new-bound-vars (append params bound-vars)))
+         (loop body new-bound-vars)))  ;; Add params to bound-vars and process body
+      
+      ;; Case: if expression (if <expr> <expr> <expr>)
+      ((and (pair? expr) (eq? (prefix expr) 'if))
+       (let* ((test-bound (loop (condition expr) bound-vars))
+              (then-bound (loop (true expr) test-bound))
+              (else-bound (loop (false expr) then-bound)))
+         else-bound))  ;; Combine all branches
+      
+      ;; Case: list of expressions (<expr*>)
+      ((pair? expr)
+       (let* ((first-bound (loop (prefix expr) bound-vars))
+             (rest-bound (loop (cdr expr) first-bound)))
+         rest-bound))  ;; Combine bound-vars from all parts
+      
+      ;; Default: no bound variables
+      (else bound-vars))))
+
+;; Collects free variables from an expression
+(define (get-free-vars expr)
+  (let loop ((expr expr) (bound-vars '()) (free-vars '()))
+    (cond
+      ;; Case: atomic expression (variable)
+      ((symbol? expr)
+       (if (and (is-variable? expr) (not (member expr bound-vars)))  ;; Ensure it's a valid free variable
+           (cons expr free-vars)  ;; Add to free-vars if not bound
+           free-vars))  ;; Skip if not free or not a valid variable
+      
+      ;; Case: lambda expression (<lambda> <var*> <expr>)
+      ((and (pair? expr) (eq? (prefix expr) 'lambda))
+       (let* ((params (filter is-variable? (cadr expr)))  ;; Only include valid variables
+              (body (caddr expr))
+              (new-bound-vars (append params bound-vars)))
+         (loop body new-bound-vars free-vars)))  ;; Extend bound-vars
+      
+      ;; Case: if expression (if <expr> <expr> <expr>)
+      ((and (pair? expr) (eq? (prefix expr) 'if))
+       (let* ((test-free (loop (condition expr) bound-vars free-vars))
+              (then-free (loop (true expr) bound-vars test-free))
+              (else-free (loop (false expr) bound-vars then-free)))
+         else-free))  ;; Combine free-vars from all branches
+      
+      ;; Case: list of expressions (<expr*>)
+      ((pair? expr)
+       (let* ((first-free (loop (car expr) bound-vars free-vars))
+             (rest-free (loop (cdr expr) bound-vars first-free)))
+         rest-free))  ;; Combine free-vars from all parts
+      
+      ;; Default: no free variables
+      (else free-vars))))
+
+;; Test utility
+(define (analyze-vars-separated expr)
+  (list 'bound (get-bound-vars expr) 'free (get-free-vars expr)))
+
+;; Test cases
+(define expr1 '(lambda (x y) (if x (+ y 1) z)))   ; z is free
+(define expr2 '(lambda (x) ((lambda (y) (+ x y)) z))) ; z is free
+(define expr3 '(lambda (x) (if (< x 0) (* x x) (+ x z)))) ; z is free
+(define expr4 '(lambda (x) ((lambda (y) (if y x z)) 0))) ; z is free
+
+;; Test results
+(display (analyze-vars-separated expr1)) ; '(bound (x y) free (z))
+(newline)
+(display (analyze-vars-separated expr2)) ; '(bound (x y) free (z))
+(newline)
+(display (analyze-vars-separated expr3)) ; '(bound (x) free (z))
+(newline)
+(display (analyze-vars-separated expr4)) ; '(bound (x y) free (z))
+(newline)
