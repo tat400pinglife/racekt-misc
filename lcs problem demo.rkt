@@ -7,6 +7,9 @@
 ; The second is m*n time where it can use vectors and lists.
 
 ; note that vectors have limitations, but it has a faster look-up
+
+; The classical recursive can be improved without using tables...
+
 (define s1
   "abcdefghi")
 
