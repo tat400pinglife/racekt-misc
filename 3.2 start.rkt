@@ -165,24 +165,13 @@
                                                       (replace-each-top-level-comma
                                                        (substring exp len-pre len-exp))))))))))
 
-(define grammar-3-1 '((program (expression) a-program) (expression (number) lit-
-exp) (expression (id) var-exp) (expression (primitive "(" (separated-
-list expression ",") ")" ) primapp-exp) (primitive ("+") add-
-prim) (primitive ("-") subtract-prim) (primitive ("*") mult-
-prim) (primitive ("add1") incr-prim) (primitive ("sub1") decr-prim)))
 
-(define scan&parse (sllgen:make-string-parser scanner-spec-3-1 grammar-3-1))
-(sllgen:make-define-datatypes scanner-spec-3-1 grammar-3-1)
-(define run (lambda (string) (eval-program (scan&parse string))))
-(scan&parse "add1(2)")(a-program (primapp-exp (incr-prim) ((lit-exp 2))))> (run "add1(2)")
-(define read-eval-print (sllgen:make-rep-loop "--> " eval-program (sllgen:make-stream-parser scanner-spec-3-1 grammar-3-1)))
 
 
 
 (define run (lambda (x) (eval-program (parse-program x))))
 
-(run '5)
-(run '(add1 2))
+
 (define read-eval-print
   (lambda () (begin (display "-- ") (write (eval-program (parse-program (read)))) (newline) (read-eval-print))))
 

@@ -1,8 +1,46 @@
+;; Remove redundant manual datatype declarations
+;; SLLGEN automatically generates these from the grammar
+;(define-datatype program program?
+;  (a-program (exp expression?)))
+;
+;(define-datatype expression expression?
+;  (lit-exp (datum number?))
+;  (var-exp (id symbol?))
+;  (primapp-exp (prim primitive?)
+;               (rands (list-of expression?))))
+;
+;(define-datatype primitive primitive?
+;  (add-prim)
+;  (subtract-prim)
+;  (mult-prim)
+;  (incr-prim)
+;  (decr-prim))
+
+;; Remove manual AST conversion functions
+;(define expression-to-list
+;  (lambda (exp)
+;    (cases expression exp
+;      (lit-exp (datum) (list 'lit-exp datum))
+;      (var-exp (id) (list 'var-exp id))
+;      (primapp-exp (prim rands)
+;        (list 'primapp-exp
+;              (cases primitive prim
+;                (add-prim () (list 'add-prim))
+;                (subtract-prim () (list 'subtract-prim))
+;                (mult-prim () (list 'mult-prim))
+;                (incr-prim () (list 'incr-prim))
+;                (decr-prim () (list 'decr-prim)))
+;              (map expression-to-list rands))))))
+
+;(define program-to-list
+;  (lambda (prgm)
+;    (cases program prgm
+;      (a-program (exp)
+;        (list 'a-program (expression-to-list exp))))))
+
+;; Replace manual scan&parse with SLLGEN equivalent
+
 #lang eopl
-
-;; Section 2.3.3
-
-;; abstract syntax trees for environments
 
 (define scheme-value?
   (lambda (v) #t))
@@ -13,8 +51,6 @@
    (syms (list-of symbol?))
    (vals (list-of scheme-value?))
    (env environment?)))
-
-;; corresponding implementation of the environment data type
 
 (define list-find-position (lambda (sym los)
                              (list-index (lambda (sym1) (eqv? sym1 sym)) los)))
@@ -43,53 +79,12 @@
                              (if (number? pos)
                                  (list-ref vals pos)
                                  (apply-env env sym)))))))
-
-
-
-
-;; with all of this in place, we are asked to implement environment-to-list, as illustrated
-;; in the text (in the current context, this is perhaps useful as a means of
-;; exploring the behavior of the interpreter
-
-(define environment-to-list
-  (lambda (env)
-    (cases environment env
-      (empty-env-record () (list 'empty-env-record))
-      (extended-env-record (syms vals env)
-                           (list 'extended-env-record syms vals (environment-to-list env))))))
-
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-;;; Section 3.1  -- this definition is now supplied by sllgen: see below
-;
-;;; program datatype
-;
-;(define-datatype program program?
-;  (a-program (exp expression?)))
-;
-;(define-datatype expression expression?
-;  (lit-exp (datum number?))
-;  (var-exp (id symbol?))
-;  (primapp-exp (prim primitive?)
-;               (rands (list-of expression?))))
-;  
-;
-;(define-datatype primitive primitive?
-;  (add-prim)
-;  (subtract-prim)
-;  (mult-prim)
-;  (incr-prim)
-;  (decr-prim))
-;
-;
-
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-
-
-;; Figure 3.3 -- specifications for scanner and grammar
+(define init-env
+  (lambda ()
+    (extend-env
+     '(i v x emptylist)
+     '(1 5 10 ())
+     (empty-env))))
 
 (define scanner-spec-3-1
   '((white-sp
@@ -111,12 +106,6 @@
     (expression
      (identifier)
      var-exp)
-    (expression
-     ("if" expression "then" expression "else" expression)
-     if-exp)
-    (expression
-     ("let" (arbno identifier "=" expression) "in" expression)
-     let-exp)
     (expression
      (primitive "(" (separated-list expression ",")  ")" )
      primapp-exp)
@@ -140,24 +129,16 @@
                list-prim)
     (primitive ("cdr")
                cdr-prim)
-    (primitive ("equal?")
-               equal?-prim)
-    (primitive ("zero?")
-               zero?-prim)
     ))
+;; Automatically generate datatype definitions from grammar
+(sllgen:make-define-datatypes scanner-spec-3-1 grammar-3-1)
 
-
-
-
-;; here is the interpreter from Figure 3.2
-
+;; Keep essential evaluator and environment logic
 (define eval-program
   (lambda (pgm)
     (cases program pgm
       (a-program (body)
-                 (eval-expression body (init-env))))))
-
-(define true-value? (lambda (x) (not (zero? x))))
+        (eval-expression body (init-env))))))
 
 (define eval-expression
   (lambda (exp env)
@@ -165,16 +146,8 @@
       (lit-exp (datum) datum)
       (var-exp (id) (apply-env env id))
       (primapp-exp (prim rands)
-                   (let ((args (eval-rands rands env)))
-                     (apply-primitive prim args)))
-      (if-exp (test-exp true-exp false-exp)
-              (if (true-value? (eval-expression test-exp env))
-                  (eval-expression true-exp env)
-                  (eval-expression false-exp env)))
-      (let-exp (identifier expr body)
-               (let ((args (eval-rands expr env)))
-                 (eval-expression body (extend-env identifier args env))))
-      )))
+        (let ((args (eval-rands rands env)))
+          (apply-primitive prim args))))))
 
 (define eval-rands
   (lambda (rands env)
@@ -183,7 +156,6 @@
 (define eval-rand
   (lambda (rand env)
     (eval-expression rand env)))
-
 
 (define apply-primitive
   (lambda (prim args)
@@ -200,42 +172,9 @@
                     (car (car args)) (eopl:error "ERROR")))
       (cons-prim () (cons (car args) (cadr args)))
       (cdr-prim () (cdr (car args)))
-      (equal?-prim () (if (equal? (car args) (cadr args)) 1 0))
-      (zero?-prim () (if (zero? (car args)) 1 0))
       )))
 
-; more 'better' way is to create a function "check-primitive" that will check for the correct number of args
-; this will then have to be changed with the read-eval-print that will have its own dedicated error message
-; that will display when a function check return #f
-
-(define init-env
-  (lambda ()
-    (extend-env
-     '(i v x emptylist)
-     '(1 5 10 ())
-     (empty-env))))
-
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-
-
-
-;; Figure 3.4
-
-
-(define scan&parse
-  (sllgen:make-string-parser
-   scanner-spec-3-1
-   grammar-3-1))
-
-(sllgen:make-define-datatypes scanner-spec-3-1 grammar-3-1)
-
-(define run
-  (lambda (string)
-    (eval-program
-     (scan&parse string))))
-
+;; Retain REPL integration with streamlined SLLGEN parsing
 (define read-eval-print
   (sllgen:make-rep-loop "--> " eval-program
      (sllgen:make-stream-parser
@@ -245,4 +184,3 @@
 (define repl
   (lambda ()
     (read-eval-print)))
-
