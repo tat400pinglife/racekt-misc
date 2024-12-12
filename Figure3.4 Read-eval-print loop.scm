@@ -91,7 +91,7 @@
 
 ;; Figure 3.3 -- specifications for scanner and grammar
 
-(define scanner-spec-3-1
+(define scanner
   '((white-sp
      (whitespace)                                    skip)
     (comment
@@ -102,7 +102,7 @@
      (digit (arbno digit))                           number)))
 
 
-(define grammar-3-1
+(define grammar
   '((program
      (expression) a-program)
     (expression
@@ -224,23 +224,23 @@
 ;; Figure 3.4
 
 
-(define scan&parse
-  (sllgen:make-string-parser
-   scanner-spec-3-1
-   grammar-3-1))
+;; (define scan&parse
+;;   (sllgen:make-string-parser
+;;    scanner
+;;    grammar))
 
-(sllgen:make-define-datatypes scanner-spec-3-1 grammar-3-1)
+(sllgen:make-define-datatypes scanner grammar)
 
-(define run
-  (lambda (string)
-    (eval-program
-     (scan&parse string))))
+;; (define run
+;;   (lambda (string)
+;;     (eval-program
+;;      (scan&parse string))))
 
 (define read-eval-print
   (sllgen:make-rep-loop "--> " eval-program
      (sllgen:make-stream-parser
-      scanner-spec-3-1
-      grammar-3-1)))
+      scanner
+      grammar)))
 
 (define repl
   (lambda ()
